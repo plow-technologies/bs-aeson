@@ -26,6 +26,6 @@
   "homepage": "https://github.com/plow-technologies/bs-aeson#readme",
   "devDependencies": {
     "bs-platform": "^4.0.5",
-    "@glennsl/bs-jest": "^0.4.2"
+    "@glennsl/bs-jest": "^0.4.3"
   }
 }
