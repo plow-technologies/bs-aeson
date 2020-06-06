@@ -52,6 +52,9 @@ test "uint32" (fun () ->
 test "uint64" (fun () ->
   expect @@ uint64 (U.UInt64.ofInt 233) |> toEqual @@ Obj.magic "233");
 
+test "uint64" (fun () ->
+  expect @@ uint64 (U.UInt64.maxInt) |> toEqual @@ Obj.magic "18446744073709551616");
+
 test "bigint" (fun () ->
   expect @@ bigint (Bigint.of_string "38293829382888882338928") |> toEqual @@ Obj.magic "38293829382888882338928");
 

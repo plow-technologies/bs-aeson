@@ -47,7 +47,8 @@ describe "bool" (fun () ->
   let open Decode in
 
   test "bool" (fun () ->
-    expect @@ bool (Encode.bool true) |> toEqual true);
+    expect @@ bool (Encode.bool true) |> toEqual true |> ignore;
+    expect @@ Aeson.Bool.decodeUnsafe (Aeson.Bool.encode true) |> toEqual true);
 
   test "bool - false" (fun () ->
     expect @@ bool (Encode.bool false) |> toEqual false);
@@ -73,6 +74,9 @@ describe "int" (fun () ->
   test "int" (fun () ->
     expect @@ int (Encode.int 23) |> toEqual 23);
 
+  test "int" (fun () ->
+    expect @@ Aeson.Int.decodeUnsafe (Aeson.Int.encode 123) |> toEqual 123);
+  
   test "int > 32-bit" (fun () ->
     (* Use %raw since integer literals > Int32.max_int overflow without warning *)
     let big_int = [%raw "2147483648"] in
@@ -82,14 +86,11 @@ describe "int" (fun () ->
 );
 
 describe "int32" (fun () ->
-  let open Aeson in
-  let open! Decode in
+  test "int32" (fun () ->
+    expect @@ Aeson.Decode.int32 (Aeson.Encode.int32 (Int32.of_int 23)) |> toEqual (Int32.of_int 23));
 
   test "int32" (fun () ->
-    expect @@ int32 (Encode.int32 (Int32.of_int 23)) |> toEqual (Int32.of_int 23));
-
-  test "int32" (fun () ->
-    expect @@ int32 (Encode.int32 (Int32.of_int (-23223))) |> toEqual (Int32.of_int (-23223)));
+    expect @@ Aeson.Decode.int32 (Aeson.Encode.int32 (Int32.of_int (-23223))) |> toEqual (Int32.of_int (-23223)));
 );
 
 describe "int64" (fun () ->
@@ -121,14 +122,11 @@ describe "int64_of_array" (fun () ->
 );
 
 describe "nativeint" (fun () ->
-  let open Aeson in
-  let open! Decode in
+  test "nativeint" (fun () ->
+    expect @@ Aeson.Decode.nativeint (Aeson.Encode.nativeint (Nativeint.of_int 23)) |> toEqual (Nativeint.of_int 23));
 
   test "nativeint" (fun () ->
-    expect @@ nativeint (Encode.nativeint (Nativeint.of_int 23)) |> toEqual (Nativeint.of_int 23));
-
-  test "nativeint" (fun () ->
-    expect @@ nativeint (Encode.nativeint (Nativeint.of_int (-23223))) |> toEqual (Nativeint.of_int (-23223)));
+    expect @@  Aeson.Decode.nativeint (Aeson.Encode.nativeint (Nativeint.of_int (-23223))) |> toEqual (Nativeint.of_int (-23223)));
 );
 
 describe "uint8" (fun () ->
@@ -151,6 +149,10 @@ describe "uint16" (fun () ->
 
   test "uint16" (fun () ->
     expect @@ uint16 (Encode.uint16 (U.UInt16.ofInt (1233))) |> toEqual (U.UInt16.ofInt (1233)));
+
+  test "uint16" (fun () ->
+    expect @@ uint16 (Encode.uint16 (U.UInt16.maxInt)) |> toEqual (U.UInt16.maxInt));
+
 );
 
 
@@ -162,7 +164,11 @@ describe "uint32" (fun () ->
     expect @@ uint32 (Encode.uint32 (U.UInt32.ofInt 23)) |> toEqual (U.UInt32.ofInt 23));
 
   test "uint32" (fun () ->
-    expect @@ uint32 (Encode.uint32 (U.UInt32.ofInt (23223))) |> toEqual (U.UInt32.ofInt (23223)));
+      expect @@ uint32 (Encode.uint32 (U.UInt32.ofInt (23223))) |> toEqual (U.UInt32.ofInt (23223)));
+
+  test "uint32" (fun () ->
+      expect @@ uint32 (Encode.uint32 (U.UInt32.ofInt64 (4294967295L))) |> toEqual (U.UInt32.ofInt64 (4294967295L)));
+  
 );
 
 describe "uint64" (fun () ->
@@ -174,17 +180,18 @@ describe "uint64" (fun () ->
 
   test "uint64" (fun () ->
     expect @@ uint64 (Encode.uint64 (U.UInt64.ofInt (26423))) |> toEqual (U.UInt64.ofInt (26423)));
+
+  test "uint64" (fun () ->
+    expect @@ uint64 (Encode.uint64 U.UInt64.maxInt) |> toEqual (U.UInt64.maxInt));
+
 );
 
 describe "bigint" (fun () ->
-  let open Aeson in
-  let open! Decode in
+  test "bigint" (fun () ->
+    expect @@ Aeson.Bigint.decodeUnsafe (Aeson.Encode.bigint (Bigint.of_int 23)) |> toEqual (Bigint.of_int 23));
 
   test "bigint" (fun () ->
-    expect @@ bigint (Encode.bigint (Bigint.of_int 23)) |> toEqual (Bigint.of_int 23));
-
-  test "bigint" (fun () ->
-    expect @@ bigint (Encode.bigint (Bigint.of_int (26423))) |> toEqual (Bigint.of_int (26423)));
+    expect @@ Aeson.Bigint.decodeUnsafe (Aeson.Encode.bigint (Bigint.of_int (26423))) |> toEqual (Bigint.of_int (26423)));
   );
 
 
@@ -516,6 +523,9 @@ describe "at" (fun () ->
 );
 
 describe "optional" (fun () ->
+  test "int32 -> int32" (fun () ->
+    expect @@ (Aeson.Decode.optional Aeson.Decode.int32) (Aeson.Encode.int32 (Int32.of_int 23)) |> toEqual (Some (Int32.of_int 23)));    
+
   let open Aeson in
   let open! Decode in
 
@@ -525,8 +535,7 @@ describe "optional" (fun () ->
     expect @@ (optional int) (Encode.float 1.23) |> toEqual None);
   test "int -> int" (fun () ->
     expect @@ (optional int) (Encode.int 23) |> toEqual (Some 23));
-  test "int32 -> int32" (fun () ->
-    expect @@ (optional int32) (Encode.int32 (Int32.of_int 23)) |> toEqual (Some (Int32.of_int 23)));
+
   test "int64 -> int64" (fun () ->
     expect @@ (optional int64_of_array) (Encode.int64_to_array (Int64.of_int 64)) |> toEqual (Some (Int64.of_int 64)));
   test "string -> int" (fun () ->

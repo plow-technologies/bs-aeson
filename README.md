@@ -91,6 +91,11 @@ Then add `bs-aeson` to `bs-dependencies` in your `bsconfig.json`:
 
 ## Changes
 
+### 5.0.0
+
+* Use modules in aeson.ml for each encoder and decoder pair of a type. 
+  More idiomatic OCaml.
+
 ### 4.0.0
 
 * Add dependency `bs-zarith`.

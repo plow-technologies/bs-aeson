@@ -127,3 +127,48 @@ let _ =
 module Decode = Aeson_decode
 module Encode = Aeson_encode
 module Compatibility = Aeson_compatibility
+
+module type DecodeUnsafe = sig
+  type t
+  val decodeUnsafe : Js.Json.t -> t
+end
+
+module type DecodeSafe = sig
+  type t
+  val decode : Js.Json.t -> (t, string) Belt.Result.t
+  include DecodeUnsafe with type t := t
+end
+
+module type Encode = sig
+  type t
+  val encode : t -> Js.Json.t
+end
+
+module type EncodeAndDecode = sig
+  include DecodeSafe
+  include Encode with type t := t
+end
+
+module Bool : EncodeAndDecode with type t = bool
+
+module Bigint : EncodeAndDecode with type t = Bigint.t
+     
+module Float : EncodeAndDecode with type t = float
+     
+module Int : EncodeAndDecode with type t = int
+
+module Int32 : EncodeAndDecode with type t = int32
+
+module Nativeint : EncodeAndDecode with type t = nativeint
+
+module UInt8 : EncodeAndDecode with type t = U.UInt8.t
+
+module UInt16 : EncodeAndDecode with type t = U.UInt16.t
+
+module UInt32 : EncodeAndDecode with type t = U.UInt32.t
+
+module UInt64 : EncodeAndDecode with type t = U.UInt64.t
+     
+module String : EncodeAndDecode with type t = string
+
+module Date : EncodeAndDecode with type t = Js_date.t
