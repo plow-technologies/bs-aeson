@@ -51,6 +51,43 @@ let decodePairKeyMap json =
   | v -> Belt.Result.Ok v
   | exception Aeson.Decode.DecodeError msg -> Belt.Result.Error ("decodePairKey: " ^ msg)
 
+type newtype =
+  | Newtype of string
+
+let newtypeToString x =
+  match x with
+  | Newtype str -> str
+
+let stringToNewtype x =
+  Newtype x
+
+module NewtypeKeyComparable =
+  Belt.Id.MakeComparable(
+    struct
+      type t = newtype
+      let cmp a b =
+        (match (a, b) with
+         | (Newtype a, Newtype b) -> compare a b : int)
+    end
+  )
+
+type newtypeKeyMap =
+  { newtypeKeyMap : (newtype, string, NewtypeKeyComparable.identity) Belt.Map.t
+  }
+
+let encodeNewtypeKeyMap (x: newtypeKeyMap) =  
+  Aeson.Encode.object_
+    [ ( "newtypeKeyMap", Aeson.Encode.beltMapString Aeson.Encode.string (Belt.Map.String.fromArray (Array.map (fun (x,y) -> ((newtypeToString x, y))) (Belt.Map.toArray x.newtypeKeyMap))) )
+    ]
+
+let decodeNewtypeKeyMap json =
+  match Aeson.Decode.
+    { newtypeKeyMap = Belt.Map.fromArray ~id:(module NewtypeKeyComparable) (Array.map (fun (x, y) -> ((Newtype x, y))) (Belt.Map.String.toArray (field "newtypeKeyMap" (Aeson.Decode.beltMapString Aeson.Decode.string) json)))
+    }
+  with
+  | v -> Belt.Result.Ok v
+  | exception Aeson.Decode.DecodeError msg -> Belt.Result.Error ("decodeNewtypeKeyMap: " ^ msg)
+
 let () =
 
 describe "Belt.Map.String.t" (fun () ->
@@ -77,5 +114,14 @@ describe "(pairKey, string, PairKeyComparable.identity) Belt.Map.t" (fun () ->
         decodePairKeyMap
         encodePairKeyMap
         (Js.Json.parseExn "{\"pairKeyMap\":[[[0,\"a\"],\"A\"],[[1,\"b\"],\"B\"]]}")
+    )
+);
+
+describe "newtype" (fun () ->
+  test "newtype string wrapper key map" (fun () ->
+      jsonRoundtripSpec
+        decodeNewtypeKeyMap
+        encodeNewtypeKeyMap
+        (Js.Json.parseExn "{\"newtypeKeyMap\":{\"a\":\"A\",\"b\":\"B\"}}")
     )
 );
