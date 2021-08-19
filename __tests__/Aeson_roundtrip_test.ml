@@ -54,13 +54,6 @@ let decodePairKeyMap json =
 type newtype =
   | Newtype of string
 
-let newtypeToString x =
-  match x with
-  | Newtype str -> str
-
-let stringToNewtype x =
-  Newtype x
-
 module NewtypeKeyComparable =
   Belt.Id.MakeComparable(
     struct
@@ -77,7 +70,7 @@ type newtypeKeyMap =
 
 let encodeNewtypeKeyMap (x: newtypeKeyMap) =  
   Aeson.Encode.object_
-    [ ( "newtypeKeyMap", Aeson.Encode.beltMapString Aeson.Encode.string (Belt.Map.String.fromArray (Array.map (fun (x,y) -> ((newtypeToString x, y))) (Belt.Map.toArray x.newtypeKeyMap))) )
+    [ ( "newtypeKeyMap", Aeson.Encode.beltMapString Aeson.Encode.string (Belt.Map.String.fromArray (Array.map (fun (x,y) -> ((match x with | Newtype str -> str, y))) (Belt.Map.toArray x.newtypeKeyMap))) )
     ]
 
 let decodeNewtypeKeyMap json =
@@ -87,6 +80,36 @@ let decodeNewtypeKeyMap json =
   with
   | v -> Belt.Result.Ok v
   | exception Aeson.Decode.DecodeError msg -> Belt.Result.Error ("decodeNewtypeKeyMap: " ^ msg)
+
+type newtypeInt =
+  | NewtypeInt of int
+
+module NewtypeIntKeyComparable =
+  Belt.Id.MakeComparable(
+    struct
+      type t = newtypeInt
+      let cmp a b =
+        (match (a, b) with
+         | (NewtypeInt a, NewtypeInt b) -> compare a b : int)
+    end
+  )
+
+type newtypeIntKeyMap =
+  { newtypeIntKeyMap : (newtypeInt, string, NewtypeIntKeyComparable.identity) Belt.Map.t
+  }
+
+let encodeNewtypeIntKeyMap (x: newtypeIntKeyMap) =  
+  Aeson.Encode.object_
+    [ ( "newtypeIntKeyMap", Aeson.Encode.beltMapString Aeson.Encode.string (Belt.Map.String.fromArray (Array.map (fun (x,y) -> ((match x with | NewtypeInt str -> string_of_int str, y))) (Belt.Map.toArray x.newtypeIntKeyMap))) )
+    ]
+
+let decodeNewtypeIntKeyMap json =
+  match Aeson.Decode.
+    { newtypeIntKeyMap = Belt.Map.fromArray ~id:(module NewtypeIntKeyComparable) (Array.map (fun (x, y) -> ((NewtypeInt (int_of_string x), y))) (Belt.Map.String.toArray (field "newtypeIntKeyMap" (Aeson.Decode.beltMapString Aeson.Decode.string) json)))
+    }
+  with
+  | v -> Belt.Result.Ok v
+  | exception Aeson.Decode.DecodeError msg -> Belt.Result.Error ("decodeNewtypeIntKeyMap: " ^ msg)
 
 let () =
 
@@ -123,5 +146,14 @@ describe "newtype" (fun () ->
         decodeNewtypeKeyMap
         encodeNewtypeKeyMap
         (Js.Json.parseExn "{\"newtypeKeyMap\":{\"a\":\"A\",\"b\":\"B\"}}")
+    )
+);
+
+describe "newtypeInt" (fun () ->
+  test "newtype int wrapper key map" (fun () ->
+      jsonRoundtripSpec
+        decodeNewtypeIntKeyMap
+        encodeNewtypeIntKeyMap
+        (Js.Json.parseExn "{\"newtypeIntKeyMap\":{\"1\":\"A\",\"2\":\"B\"}}")
     )
 );
